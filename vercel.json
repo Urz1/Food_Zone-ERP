@@ -1,0 +1,1 @@
+{"buildCommand":"bunx expo export -p web","outputDirectory":"dist","installCommand":"bun install --ignore-scripts","cleanUrls":true,"framework":null,"rewrites":[{"source":"/:path*","destination":"/"}]}

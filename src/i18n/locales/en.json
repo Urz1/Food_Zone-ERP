@@ -1,0 +1,63 @@
+{
+  "app": {
+    "name": "🍽️ Food Zone ERP",
+    "title": "Food Zone ERP"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "username": "Username",
+    "password": "Password",
+    "ownerLogin": "Owner Login",
+    "loginError": "Invalid credentials. Use: owner / owner123",
+    "loginRequired": "Please enter username and password",
+    "logoutConfirm": "Are you sure you want to logout?",
+    "cancel": "Cancel",
+    "confirm": "Logout"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "inventory": "Inventory",
+    "purchases": "Purchases",
+    "recipes": "Recipes",
+    "more": "More",
+    "production": "Production",
+    "sales": "Sales",
+    "expenses": "Expenses",
+    "reports": "Reports"
+  },
+  "dashboard": {
+    "greeting": "Hello, {{name}}",
+    "subtitle": "Today's Overview",
+    "todaySales": "Today's Sales",
+    "todayExpenses": "Today's Expenses",
+    "inventoryValue": "Inventory Value",
+    "todayNet": "Today's Net",
+    "lowStockAlerts": "⚠️ Low Stock Alerts",
+    "expiringSoon": "📅 Expiring Soon",
+    "batch": "Batch",
+    "expires": "Expires",
+    "reorderAt": "Reorder at"
+  },
+  "common": {
+    "error": "Error",
+    "loading": "Loading...",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "total": "Total",
+    "quantity": "Quantity",
+    "price": "Price",
+    "date": "Date",
+    "name": "Name",
+    "description": "Description"
+  },
+  "settings": {
+    "language": "Language",
+    "english": "English",
+    "amharic": "አማርኛ"
+  }
+}
