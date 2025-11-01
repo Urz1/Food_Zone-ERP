@@ -9,37 +9,47 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { spacing, borderRadius, fontSize, fontWeight, componentStyles, layout } from '../themes/designTokens';
 
 const LoginScreen = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const { login } = useAuth();
+  const { t } = useTranslation();
+  const { theme } = useTheme();
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert('Error', 'Please enter username and password');
+      Alert.alert(t('common.error'), t('auth.loginRequired'));
       return;
     }
 
     const success = await login(username, password);
     if (!success) {
-      Alert.alert('Error', 'Invalid credentials. Use: owner / owner123');
+      Alert.alert(t('common.error'), t('auth.loginError'));
     }
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>🍽️ Food Zone ERP</Text>
-        <Text style={styles.subtitle}>Owner Login</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>{t('app.name')}</Text>
+        <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{t('auth.ownerLogin')}</Text>
 
         <TextInput
-          style={styles.input}
-          placeholder="Username"
+          style={[styles.input, {
+            backgroundColor: theme.colors.inputBackground,
+            borderColor: theme.colors.inputBorder,
+            color: theme.colors.text
+          }]}
+          placeholder={t('auth.username')}
+          placeholderTextColor={theme.colors.inputPlaceholder}
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
@@ -47,18 +57,23 @@ const LoginScreen = () => {
         />
 
         <TextInput
-          style={styles.input}
-          placeholder="Password"
+          style={[styles.input, {
+            backgroundColor: theme.colors.inputBackground,
+            borderColor: theme.colors.inputBorder,
+            color: theme.colors.text
+          }]}
+          placeholder={t('auth.password')}
+          placeholderTextColor={theme.colors.inputPlaceholder}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Login</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={handleLogin}>
+          <Text style={[styles.buttonText, { color: theme.colors.surface }]}>{t('auth.login')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.hint}>Default: owner / owner123</Text>
+        <Text style={[styles.hint, { color: theme.colors.textTertiary }]}>{t('auth.defaultCredentials')}</Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -67,52 +82,40 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5'
   },
   content: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24
+    padding: layout.screenPadding,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: fontSize.xxxl,
+    fontWeight: fontWeight.bold,
     textAlign: 'center',
-    marginBottom: 8
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 18,
-    color: '#666',
+    fontSize: fontSize.lg,
     textAlign: 'center',
-    marginBottom: 40
+    marginBottom: spacing.xxxl,
   },
   input: {
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#DDD'
+    ...componentStyles.input,
+    marginBottom: spacing.lg,
   },
   button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8
+    ...componentStyles.button,
+    marginTop: spacing.sm,
   },
   buttonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600'
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
   },
   hint: {
     textAlign: 'center',
-    color: '#999',
-    marginTop: 16,
-    fontSize: 12
-  }
+    marginTop: spacing.lg,
+    fontSize: fontSize.xs,
+  },
 });
 
 export default LoginScreen;

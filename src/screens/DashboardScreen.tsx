@@ -4,69 +4,57 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   Alert
 } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
+import { useTheme } from '../contexts/ThemeContext';
+import AppHeader from '../components/AppHeader';
+import { spacing, borderRadius, fontSize, fontWeight, layout } from '../themes/designTokens';
 
 const DashboardScreen = () => {
-  const { user, logout } = useAuth();
   const { getDashboardStats } = useData();
+  const { t } = useTranslation();
+  const { theme } = useTheme();
   const stats = getDashboardStats();
 
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', onPress: logout, style: 'destructive' }
-    ]);
-  };
-
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello, {user?.name}</Text>
-          <Text style={styles.subtitle}>Today's Overview</Text>
-        </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <AppHeader showUserInfo={true} />
 
       <ScrollView style={styles.content}>
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, styles.salesCard]}>
-            <Text style={styles.statLabel}>Today's Sales</Text>
-            <Text style={styles.statValue}>${stats.todaySales.toFixed(2)}</Text>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.success }]}>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>{t('dashboard.todaySales')}</Text>
+            <Text style={[styles.statValue, { color: theme.colors.text }]}>${stats.todaySales.toFixed(2)}</Text>
           </View>
 
-          <View style={[styles.statCard, styles.expensesCard]}>
-            <Text style={styles.statLabel}>Today's Expenses</Text>
-            <Text style={styles.statValue}>${stats.todayExpenses.toFixed(2)}</Text>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.error }]}>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>{t('dashboard.todayExpenses')}</Text>
+            <Text style={[styles.statValue, { color: theme.colors.text }]}>${stats.todayExpenses.toFixed(2)}</Text>
           </View>
 
-          <View style={[styles.statCard, styles.inventoryCard]}>
-            <Text style={styles.statLabel}>Inventory Value</Text>
-            <Text style={styles.statValue}>${stats.inventoryValue.toFixed(2)}</Text>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.primary }]}>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>{t('dashboard.inventoryValue')}</Text>
+            <Text style={[styles.statValue, { color: theme.colors.text }]}>${stats.inventoryValue.toFixed(2)}</Text>
           </View>
 
-          <View style={[styles.statCard, styles.profitCard]}>
-            <Text style={styles.statLabel}>Today's Net</Text>
-            <Text style={styles.statValue}>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.warning }]}>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>{t('dashboard.todayNet')}</Text>
+            <Text style={[styles.statValue, { color: theme.colors.text }]}>
               ${(stats.todaySales - stats.todayExpenses).toFixed(2)}
             </Text>
           </View>
         </View>
 
         {stats.lowStockItems.length > 0 && (
-          <View style={styles.alertSection}>
-            <Text style={styles.alertTitle}>⚠️ Low Stock Alerts</Text>
+          <View style={[styles.alertSection, { backgroundColor: theme.colors.card }]}>
+            <Text style={[styles.alertTitle, { color: theme.colors.warning }]}>{t('dashboard.lowStockAlerts')}</Text>
             {stats.lowStockItems.map(item => (
-              <View key={item.id} style={styles.alertItem}>
-                <Text style={styles.alertItemName}>{item.name}</Text>
-                <Text style={styles.alertItemDetail}>
-                  {item.quantity} {item.unit} (Reorder at {item.reorderLevel})
+              <View key={item.id} style={[styles.alertItem, { borderBottomColor: theme.colors.borderLight }]}>
+                <Text style={[styles.alertItemName, { color: theme.colors.text }]}>{item.name}</Text>
+                <Text style={[styles.alertItemDetail, { color: theme.colors.textSecondary }]}>
+                  {item.quantity} {item.unit} ({t('dashboard.reorderAt')} {item.reorderLevel})
                 </Text>
               </View>
             ))}
@@ -74,13 +62,13 @@ const DashboardScreen = () => {
         )}
 
         {stats.expiringItems.length > 0 && (
-          <View style={styles.alertSection}>
-            <Text style={styles.alertTitle}>📅 Expiring Soon</Text>
+          <View style={[styles.alertSection, { backgroundColor: theme.colors.card }]}>
+            <Text style={[styles.alertTitle, { color: theme.colors.info }]}>{t('dashboard.expiringSoon')}</Text>
             {stats.expiringItems.map(({ item, batch }) => (
-              <View key={batch.id} style={styles.alertItem}>
-                <Text style={styles.alertItemName}>{item.name}</Text>
-                <Text style={styles.alertItemDetail}>
-                  Batch {batch.batchNumber} - Expires: {batch.expiryDate}
+              <View key={batch.id} style={[styles.alertItem, { borderBottomColor: theme.colors.borderLight }]}>
+                <Text style={[styles.alertItemName, { color: theme.colors.text }]}>{item.name}</Text>
+                <Text style={[styles.alertItemDetail, { color: theme.colors.textSecondary }]}>
+                  {t('dashboard.batch')} {batch.batchNumber} - {t('dashboard.expires')}: {batch.expiryDate}
                 </Text>
               </View>
             ))}
@@ -94,100 +82,52 @@ const DashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5'
-  },
-  header: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    paddingTop: 50,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE'
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold'
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4
-  },
-  logoutButton: {
-    padding: 8
-  },
-  logoutText: {
-    color: '#FF3B30',
-    fontSize: 14,
-    fontWeight: '600'
   },
   content: {
-    flex: 1
+    flex: 1,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 12
+    padding: layout.screenPadding,
   },
   statCard: {
     width: '48%',
     margin: '1%',
-    padding: 20,
-    borderRadius: 12,
-    backgroundColor: '#FFF'
-  },
-  salesCard: {
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
     borderLeftWidth: 4,
-    borderLeftColor: '#34C759'
-  },
-  expensesCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF3B30'
-  },
-  inventoryCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#007AFF'
-  },
-  profitCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF9500'
   },
   statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8
+    fontSize: fontSize.xs,
+    marginBottom: spacing.sm,
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: 'bold'
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
   },
   alertSection: {
-    margin: 12,
-    padding: 16,
-    backgroundColor: '#FFF',
-    borderRadius: 12
+    margin: layout.screenPadding,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
   },
   alertTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    marginBottom: spacing.md,
   },
   alertItem: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
   },
   alertItemName: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    marginBottom: spacing.xs,
   },
   alertItemDetail: {
-    fontSize: 12,
-    color: '#666'
-  }
+    fontSize: fontSize.xs,
+  },
 });
 
 export default DashboardScreen;

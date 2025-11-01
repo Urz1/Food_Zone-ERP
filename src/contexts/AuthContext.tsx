@@ -7,6 +7,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  updateCredentials: (newUsername: string, newPassword: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,8 +63,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const updateCredentials = async (newUsername: string, newPassword: string): Promise<boolean> => {
+    try {
+      if (!user) return false;
+
+      const updatedUser: User = {
+        ...user,
+        username: newUsername,
+        password: newPassword
+      };
+
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return true;
+    } catch (error) {
+      console.error('Update credentials error:', error);
+      return false;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, updateCredentials }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,6 +2,8 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Text } from 'react-native';
 
@@ -14,30 +16,42 @@ import ProductionScreen from '../screens/ProductionScreen';
 import SalesScreen from '../screens/SalesScreen';
 import ExpensesScreen from '../screens/ExpensesScreen';
 import ReportsScreen from '../screens/ReportsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import MoreScreen from '../screens/MoreScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const TabNavigator = () => {
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
+        tabBarActiveTintColor: theme.colors.tabActive,
+        tabBarInactiveTintColor: theme.colors.tabInactive,
         tabBarStyle: {
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.border,
           paddingBottom: 5,
           paddingTop: 5,
-          height: 60
+          height: 60,
         },
         tabBarLabelStyle: {
-          fontSize: 11
-        }
+          fontSize: 11,
+        },
+        headerStyle: {
+          backgroundColor: theme.colors.surface,
+        },
+        headerTintColor: theme.colors.text,
       }}
     >
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
         options={{
+          tabBarLabel: t('navigation.dashboard'),
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>📊</Text>
         }}
       />
@@ -45,6 +59,7 @@ const TabNavigator = () => {
         name="Inventory"
         component={InventoryScreen}
         options={{
+          tabBarLabel: t('navigation.inventory'),
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>
         }}
       />
@@ -52,6 +67,7 @@ const TabNavigator = () => {
         name="Purchases"
         component={PurchasesScreen}
         options={{
+          tabBarLabel: t('navigation.purchases'),
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>🛒</Text>
         }}
       />
@@ -59,6 +75,7 @@ const TabNavigator = () => {
         name="Recipes"
         component={RecipesScreen}
         options={{
+          tabBarLabel: t('navigation.recipes'),
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>📝</Text>
         }}
       />
@@ -66,6 +83,7 @@ const TabNavigator = () => {
         name="More"
         component={MoreNavigator}
         options={{
+          tabBarLabel: t('navigation.more'),
           headerShown: false,
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>⋯</Text>
         }}
@@ -77,12 +95,16 @@ const TabNavigator = () => {
 const MoreStack = createNativeStackNavigator();
 
 const MoreNavigator = () => {
+  const { t } = useTranslation();
+
   return (
     <MoreStack.Navigator>
-      <MoreStack.Screen name="MoreMenu" component={ProductionScreen} options={{ title: 'Production' }} />
-      <MoreStack.Screen name="Sales" component={SalesScreen} />
-      <MoreStack.Screen name="Expenses" component={ExpensesScreen} />
-      <MoreStack.Screen name="Reports" component={ReportsScreen} />
+      <MoreStack.Screen name="MoreMenu" component={MoreScreen} options={{ title: t('navigation.more') }} />
+      <MoreStack.Screen name="Production" component={ProductionScreen} options={{ title: t('navigation.production') }} />
+      <MoreStack.Screen name="Sales" component={SalesScreen} options={{ title: t('navigation.sales') }} />
+      <MoreStack.Screen name="Expenses" component={ExpensesScreen} options={{ title: t('navigation.expenses') }} />
+      <MoreStack.Screen name="Reports" component={ReportsScreen} options={{ title: t('navigation.reports') }} />
+      <MoreStack.Screen name="Settings" component={SettingsScreen} options={{ title: t('navigation.settings', { defaultValue: 'Settings' }) }} />
     </MoreStack.Navigator>
   );
 };

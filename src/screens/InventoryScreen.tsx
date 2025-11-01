@@ -9,11 +9,16 @@ import {
   Alert,
   Modal
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { InventoryItem } from '../types';
+import AppHeader from '../components/AppHeader';
 
 const InventoryScreen = () => {
   const { inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useData();
+  const { t } = useTranslation();
+  const { theme } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [formData, setFormData] = useState({
@@ -53,7 +58,7 @@ const InventoryScreen = () => {
 
   const handleSave = async () => {
     if (!formData.name || !formData.sku || !formData.unit) {
-      Alert.alert('Error', 'Please fill all required fields');
+      Alert.alert(t('common.error'), t('common.fillRequiredFields', { defaultValue: 'Please fill all required fields' }));
       return;
     }
 
@@ -87,58 +92,66 @@ const InventoryScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Inventory</Text>
-        <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
-          <Text style={styles.addButtonText}>+ Add</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <AppHeader title={t('navigation.inventory')} />
+
+      <View style={styles.actionBar}>
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
+          onPress={openAddModal}
+        >
+          <Text style={[styles.addButtonText, { color: theme.colors.surface }]}>+ {t('common.add')}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
         {inventory.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No inventory items yet</Text>
-            <Text style={styles.emptySubtext}>Tap + Add to create your first item</Text>
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+              {t('common.noData', { defaultValue: 'No inventory items yet' })}
+            </Text>
+            <Text style={[styles.emptySubtext, { color: theme.colors.textTertiary }]}>
+              {t('common.tapToAdd', { defaultValue: 'Tap + Add to create your first item' })}
+            </Text>
           </View>
         ) : (
           inventory.map(item => (
-            <View key={item.id} style={styles.card}>
+            <View key={item.id} style={[styles.card, { backgroundColor: theme.colors.card }]}>
               <View style={styles.cardHeader}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemSku}>{item.sku}</Text>
+                <Text style={[styles.itemName, { color: theme.colors.text }]}>{item.name}</Text>
+                <Text style={[styles.itemSku, { color: theme.colors.textSecondary }]}>{item.sku}</Text>
               </View>
 
               <View style={styles.cardBody}>
-                <Text style={styles.itemDetail}>
-                  Stock: {item.quantity} {item.unit}
+                <Text style={[styles.itemDetail, { color: theme.colors.text }]}>
+                  {t('common.stock', { defaultValue: 'Stock' })}: {item.quantity} {item.unit}
                 </Text>
-                <Text style={styles.itemDetail}>
-                  Cost: ${item.costPerUnit}/{item.unit}
+                <Text style={[styles.itemDetail, { color: theme.colors.text }]}>
+                  {t('common.cost', { defaultValue: 'Cost' })}: ${item.costPerUnit}/{item.unit}
                 </Text>
-                <Text style={styles.itemDetail}>
-                  Reorder Level: {item.reorderLevel}
+                <Text style={[styles.itemDetail, { color: theme.colors.text }]}>
+                  {t('common.reorderLevel', { defaultValue: 'Reorder Level' })}: {item.reorderLevel}
                 </Text>
               </View>
 
               {item.quantity <= item.reorderLevel && (
-                <View style={styles.lowStockBadge}>
-                  <Text style={styles.lowStockText}>⚠️ Low Stock</Text>
+                <View style={[styles.lowStockBadge, { backgroundColor: theme.colors.warning + '20' }]}>
+                  <Text style={[styles.lowStockText, { color: theme.colors.warning }]}>⚠️ {t('common.lowStock', { defaultValue: 'Low Stock' })}</Text>
                 </View>
               )}
 
               <View style={styles.cardActions}>
                 <TouchableOpacity
-                  style={styles.editButton}
+                  style={[styles.editButton, { backgroundColor: theme.colors.primary }]}
                   onPress={() => openEditModal(item)}
                 >
-                  <Text style={styles.editButtonText}>Edit</Text>
+                  <Text style={[styles.editButtonText, { color: theme.colors.surface }]}>{t('common.edit')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.deleteButton}
+                  style={[styles.deleteButton, { backgroundColor: theme.colors.error }]}
                   onPress={() => handleDelete(item)}
                 >
-                  <Text style={styles.deleteButtonText}>Delete</Text>
+                  <Text style={[styles.deleteButtonText, { color: theme.colors.surface }]}>{t('common.delete')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -152,69 +165,99 @@ const InventoryScreen = () => {
         presentationStyle="pageSheet"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalHeader, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
             <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={[styles.cancelText, { color: theme.colors.primary }]}>{t('common.cancel')}</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>
-              {editingItem ? 'Edit Item' : 'Add Item'}
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+              {editingItem ? t('common.edit') + ' ' + t('common.item', { defaultValue: 'Item' }) : t('common.add') + ' ' + t('common.item', { defaultValue: 'Item' })}
             </Text>
             <TouchableOpacity onPress={handleSave}>
-              <Text style={styles.saveText}>Save</Text>
+              <Text style={[styles.saveText, { color: theme.colors.primary }]}>{t('common.save')}</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.modalContent}>
-            <Text style={styles.label}>Item Name *</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('common.name')} *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text
+              }]}
               value={formData.name}
               onChangeText={text => setFormData({ ...formData, name: text })}
-              placeholder="e.g., Tomatoes"
+              placeholder={t('common.namePlaceholder', { defaultValue: 'e.g., Tomatoes' })}
+              placeholderTextColor={theme.colors.inputPlaceholder}
             />
 
-            <Text style={styles.label}>SKU *</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>SKU *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text
+              }]}
               value={formData.sku}
               onChangeText={text => setFormData({ ...formData, sku: text })}
-              placeholder="e.g., TOM-001"
+              placeholder={t('common.skuPlaceholder')}
+              placeholderTextColor={theme.colors.inputPlaceholder}
             />
 
-            <Text style={styles.label}>Unit *</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('common.unit')} *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text
+              }]}
               value={formData.unit}
               onChangeText={text => setFormData({ ...formData, unit: text })}
-              placeholder="e.g., kg, pieces, liters"
+              placeholder={t('common.unitPlaceholder', { defaultValue: 'e.g., kg, pieces, liters' })}
+              placeholderTextColor={theme.colors.inputPlaceholder}
             />
 
-            <Text style={styles.label}>Quantity</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('common.quantity')}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text
+              }]}
               value={formData.quantity}
               onChangeText={text => setFormData({ ...formData, quantity: text })}
               keyboardType="numeric"
-              placeholder="0"
+              placeholder={t('common.quantityPlaceholder')}
+              placeholderTextColor={theme.colors.inputPlaceholder}
             />
 
-            <Text style={styles.label}>Reorder Level</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('common.reorderLevel', { defaultValue: 'Reorder Level' })}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text
+              }]}
               value={formData.reorderLevel}
               onChangeText={text => setFormData({ ...formData, reorderLevel: text })}
               keyboardType="numeric"
-              placeholder="10"
+              placeholder={t('common.quantityPlaceholder')}
+              placeholderTextColor={theme.colors.inputPlaceholder}
             />
 
-            <Text style={styles.label}>Cost Per Unit</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('common.costPerUnit', { defaultValue: 'Cost Per Unit' })}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text
+              }]}
               value={formData.costPerUnit}
               onChangeText={text => setFormData({ ...formData, costPerUnit: text })}
               keyboardType="numeric"
-              placeholder="0.00"
+              placeholder={t('common.amountPlaceholder')}
+              placeholderTextColor={theme.colors.inputPlaceholder}
             />
           </ScrollView>
         </View>
@@ -226,159 +269,128 @@ const InventoryScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5'
   },
-  header: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    paddingTop: 50,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE'
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold'
+  actionBar: {
+    padding: 16,
+    paddingTop: 0,
   },
   addButton: {
-    backgroundColor: '#007AFF',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8
+    borderRadius: 8,
+    alignSelf: 'flex-start',
   },
   addButtonText: {
-    color: '#FFF',
-    fontWeight: '600'
+    fontWeight: '600',
   },
   content: {
     flex: 1,
-    padding: 16
+    padding: 16,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 60
+    paddingTop: 60,
   },
   emptyText: {
     fontSize: 18,
-    color: '#666',
-    marginBottom: 8
+    marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999'
   },
   card: {
-    backgroundColor: '#FFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12
+    marginBottom: 12,
   },
   cardHeader: {
-    marginBottom: 12
+    marginBottom: 12,
   },
   itemName: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4
+    marginBottom: 4,
   },
   itemSku: {
     fontSize: 12,
-    color: '#666'
   },
   cardBody: {
-    marginBottom: 12
+    marginBottom: 12,
   },
   itemDetail: {
     fontSize: 14,
-    color: '#333',
-    marginBottom: 4
+    marginBottom: 4,
   },
   lowStockBadge: {
-    backgroundColor: '#FFF3CD',
     padding: 8,
     borderRadius: 6,
-    marginBottom: 12
+    marginBottom: 12,
   },
   lowStockText: {
-    color: '#856404',
     fontSize: 12,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   cardActions: {
     flexDirection: 'row',
-    gap: 8
+    gap: 8,
   },
   editButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   editButtonText: {
-    color: '#FFF',
-    fontWeight: '600'
+    fontWeight: '600',
   },
   deleteButton: {
     flex: 1,
-    backgroundColor: '#FF3B30',
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   deleteButtonText: {
-    color: '#FFF',
-    fontWeight: '600'
+    fontWeight: '600',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#F5F5F5'
   },
   modalHeader: {
-    backgroundColor: '#FFF',
     padding: 16,
     paddingTop: 50,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE'
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   cancelText: {
-    color: '#007AFF',
-    fontSize: 16
+    fontSize: 16,
   },
   saveText: {
-    color: '#007AFF',
     fontSize: 16,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   modalContent: {
     flex: 1,
-    padding: 16
+    padding: 16,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333'
   },
   input: {
-    backgroundColor: '#FFF',
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#DDD'
-  }
+  },
 });
 
 export default InventoryScreen;

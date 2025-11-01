@@ -6,13 +6,21 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Modal,
   Alert,
-  Modal
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
+import { useTheme } from '../contexts/ThemeContext';
+import AppHeader from '../components/AppHeader';
+import { spacing, borderRadius, fontSize, fontWeight, componentStyles, layout } from '../themes/designTokens';
 
 const ExpensesScreen = () => {
   const { expenses, addExpense } = useData();
+  const { t } = useTranslation();
+  const { theme } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [formData, setFormData] = useState({
     category: 'Operations',
@@ -55,38 +63,48 @@ const ExpensesScreen = () => {
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Expenses</Text>
-        <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
-          <Text style={styles.addButtonText}>+ Add</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <AppHeader title={t('navigation.expenses')} />
+
+      <View style={[styles.actionBar, { backgroundColor: theme.colors.surface }]}>
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
+          onPress={openAddModal}
+        >
+          <Text style={[styles.addButtonText, { color: theme.colors.surface }]}>+ {t('common.add')}</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.statsBar}>
-        <Text style={styles.statsText}>Total: ${totalExpenses.toFixed(2)}</Text>
-        <Text style={styles.statsText}>Count: {expenses.length}</Text>
-      </View>
+       <View style={[styles.statsBar, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
+         <Text style={[styles.statsText, { color: theme.colors.error }]}>
+           {t('common.total')}: ${totalExpenses.toFixed(2)}
+         </Text>
+         <Text style={[styles.statsText, { color: theme.colors.text }]}>
+           {t('common.count', { defaultValue: 'Count' })}: {expenses.length}
+         </Text>
+       </View>
 
       <ScrollView style={styles.content}>
         {expenses.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No expenses yet</Text>
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+              {t('common.noExpenses', { defaultValue: 'No expenses yet' })}
+            </Text>
           </View>
         ) : (
           expenses.map(expense => (
-            <View key={expense.id} style={styles.card}>
+            <View key={expense.id} style={[styles.card, { backgroundColor: theme.colors.card }]}>
               <View style={styles.cardHeader}>
                 <View>
-                  <Text style={styles.description}>{expense.description}</Text>
-                  <Text style={styles.category}>{expense.category}</Text>
+                  <Text style={[styles.description, { color: theme.colors.text }]}>{expense.description}</Text>
+                  <Text style={[styles.category, { color: theme.colors.textSecondary }]}>{expense.category}</Text>
                 </View>
-                <Text style={styles.amount}>${expense.amount.toFixed(2)}</Text>
+                <Text style={[styles.amount, { color: theme.colors.error }]}>${expense.amount.toFixed(2)}</Text>
               </View>
 
-              <Text style={styles.date}>{expense.date}</Text>
+              <Text style={[styles.date, { color: theme.colors.textSecondary }]}>{expense.date}</Text>
               {expense.notes && (
-                <Text style={styles.notes}>Notes: {expense.notes}</Text>
+                <Text style={[styles.notes, { color: theme.colors.textSecondary }]}>{t('common.notes')}: {expense.notes}</Text>
               )}
             </View>
           ))
@@ -99,72 +117,97 @@ const ExpensesScreen = () => {
         presentationStyle="pageSheet"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalHeader, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
             <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={[styles.cancelText, { color: theme.colors.primary }]}>{t('common.cancel')}</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Add Expense</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>{t('common.add')} {t('navigation.expenses')}</Text>
             <TouchableOpacity onPress={handleSave}>
-              <Text style={styles.saveText}>Save</Text>
+              <Text style={[styles.saveText, { color: theme.colors.primary }]}>{t('common.save')}</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.modalContent}>
-            <Text style={styles.label}>Category *</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('common.category', { defaultValue: 'Category' })} *</Text>
             <View style={styles.categoryGrid}>
-              {categories.map(cat => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[
-                    styles.categoryChip,
-                    formData.category === cat && styles.categoryChipActive
-                  ]}
-                  onPress={() => setFormData({ ...formData, category: cat })}
-                >
-                  <Text
+              {['Office Supplies', 'Utilities', 'Marketing', 'Travel', 'Equipment', 'Software', 'Other'].map(cat => (
+                <View key={cat} style={styles.categoryGridItem}>
+                  <TouchableOpacity
                     style={[
-                      styles.categoryChipText,
-                      formData.category === cat && styles.categoryChipTextActive
+                      styles.categoryChip,
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border
+                      },
+                      formData.category === cat && [styles.categoryChipActive, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]
                     ]}
+                    onPress={() => setFormData({ ...formData, category: cat })}
                   >
-                    {cat}
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        { color: theme.colors.textSecondary },
+                        formData.category === cat && [styles.categoryChipTextActive, { color: theme.colors.surface }]
+                      ]}
+                    >
+                      {cat}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               ))}
             </View>
 
-            <Text style={styles.label}>Description *</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('common.description')} *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text
+              }]}
               value={formData.description}
               onChangeText={text => setFormData({ ...formData, description: text })}
-              placeholder="e.g., Monthly rent"
+              placeholder={t('common.descriptionPlaceholder', { defaultValue: 'e.g., Monthly rent' })}
+              placeholderTextColor={theme.colors.inputPlaceholder}
             />
 
-            <Text style={styles.label}>Amount *</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('common.amount')} *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text
+              }]}
               value={formData.amount}
               onChangeText={text => setFormData({ ...formData, amount: text })}
               keyboardType="numeric"
-              placeholder="0.00"
+              placeholder={t('common.amountPlaceholder')}
+              placeholderTextColor={theme.colors.inputPlaceholder}
             />
 
-            <Text style={styles.label}>Date *</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('common.date')} *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text
+              }]}
               value={formData.date}
               onChangeText={text => setFormData({ ...formData, date: text })}
-              placeholder="YYYY-MM-DD"
+              placeholder={t('common.datePlaceholder')}
+              placeholderTextColor={theme.colors.inputPlaceholder}
             />
 
-            <Text style={styles.label}>Notes</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>{t('common.notes')}</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, {
+                backgroundColor: theme.colors.inputBackground,
+                borderColor: theme.colors.inputBorder,
+                color: theme.colors.text
+              }]}
               value={formData.notes}
               onChangeText={text => setFormData({ ...formData, notes: text })}
-              placeholder="Additional notes"
+              placeholder={t('common.additionalNotes')}
               multiline
               numberOfLines={3}
             />
@@ -178,170 +221,132 @@ const ExpensesScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5'
   },
-  header: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    paddingTop: 50,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE'
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold'
+  actionBar: {
+    padding: layout.screenPadding,
+    paddingTop: 0,
   },
   addButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8
+    ...componentStyles.button,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   addButtonText: {
-    color: '#FFF',
-    fontWeight: '600'
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
   },
   statsBar: {
-    backgroundColor: '#FFF',
-    padding: 12,
+    padding: spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-around',
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE'
   },
   statsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FF3B30'
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
   },
   content: {
     flex: 1,
-    padding: 16
+    padding: layout.screenPadding,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 60
+    paddingTop: spacing.xxxl,
   },
   emptyText: {
-    fontSize: 18,
-    color: '#666'
+    fontSize: fontSize.lg,
   },
   card: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12
+    ...componentStyles.card,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8
+    marginBottom: spacing.sm,
   },
   description: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    marginBottom: spacing.xs,
   },
   category: {
-    fontSize: 12,
-    color: '#666'
+    fontSize: fontSize.xs,
   },
   amount: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FF3B30'
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
   },
   date: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4
+    fontSize: fontSize.xs,
+    marginBottom: spacing.xs,
   },
   notes: {
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic'
+    fontSize: fontSize.sm,
+    fontStyle: 'italic',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#F5F5F5'
   },
   modalHeader: {
-    backgroundColor: '#FFF',
-    padding: 16,
-    paddingTop: 50,
+    ...componentStyles.header,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE'
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold'
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
   },
   cancelText: {
-    color: '#007AFF',
-    fontSize: 16
+    fontSize: fontSize.md,
   },
   saveText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600'
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
   },
   modalContent: {
     flex: 1,
-    padding: 16
+    padding: layout.screenPadding,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#333'
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    marginBottom: spacing.sm,
   },
   input: {
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#DDD'
+    ...componentStyles.input,
+    marginBottom: spacing.lg,
   },
   textArea: {
     height: 80,
-    textAlignVertical: 'top'
+    textAlignVertical: 'top',
   },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16
+    marginBottom: spacing.lg,
+  },
+  categoryGridItem: {
+    marginRight: spacing.sm,
+    marginBottom: spacing.sm,
   },
   categoryChip: {
-    backgroundColor: '#FFF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: '#DDD'
   },
-  categoryChipActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF'
-  },
+  categoryChipActive: {},
   categoryChipText: {
-    fontSize: 14,
-    color: '#333'
+    fontSize: fontSize.sm,
   },
   categoryChipTextActive: {
-    color: '#FFF',
-    fontWeight: '600'
-  }
+    fontWeight: fontWeight.semibold,
+  },
 });
 
 export default ExpensesScreen;

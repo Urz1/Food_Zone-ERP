@@ -132,3 +132,48 @@ export interface DashboardStats {
     batch: InventoryBatch;
   }>;
 }
+
+export type ThemeMode = 'light' | 'dark';
+
+export interface ThemeColors {
+  // Background colors
+  background: string;
+  surface: string;
+  card: string;
+  modal: string;
+
+  // Text colors
+  text: string;
+  textSecondary: string;
+  textTertiary: string;
+
+  // Border colors
+  border: string;
+  borderLight: string;
+
+  // Status colors
+  primary: string;
+  secondary: string;
+  success: string;
+  warning: string;
+  error: string;
+  info: string;
+
+  // Input colors
+  inputBackground: string;
+  inputBorder: string;
+  inputPlaceholder: string;
+
+  // Tab colors
+  tabActive: string;
+  tabInactive: string;
+
+  // Special colors
+  shadow: string;
+  overlay: string;
+}
+
+export interface Theme {
+  mode: ThemeMode;
+  colors: ThemeColors;
+}
