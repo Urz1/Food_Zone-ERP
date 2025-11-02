@@ -1,67 +1,117 @@
-const Database = require('better-sqlite3');
+const initSqlJs = require('sql.js');
+const fs = require('fs');
 const path = require('path');
 
-// Initialize SQLite database
-const db = new Database(path.join(__dirname, 'licenses.db'));
+// Database file path
+const dbPath = path.join(__dirname, 'licenses.db');
 
-// Create tables if they don't exist
-function initializeDatabase() {
-    // Licenses table
-    db.exec(`
-    CREATE TABLE IF NOT EXISTS licenses (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      license_key TEXT UNIQUE NOT NULL,
-      business_name TEXT,
-      device_id TEXT,
-      device_info TEXT,
-      status TEXT DEFAULT 'pending',
-      expires_at DATETIME,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      activated_at DATETIME,
-      last_verified_at DATETIME
-    )
-  `);
+// Global database instance
+let db = null;
 
-    // Activation attempts log (for security monitoring)
-    db.exec(`
-    CREATE TABLE IF NOT EXISTS activation_attempts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      license_key TEXT NOT NULL,
-      device_id TEXT NOT NULL,
-      device_info TEXT,
-      business_name TEXT,
-      success INTEGER DEFAULT 0,
-      error_message TEXT,
-      ip_address TEXT,
-      attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+// Initialize sql.js database
+async function initializeDatabase() {
+    try {
+        const SQL = await initSqlJs();
 
-    // Verification logs (track license checks)
-    db.exec(`
-    CREATE TABLE IF NOT EXISTS verification_logs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      license_key TEXT NOT NULL,
-      device_id TEXT NOT NULL,
-      verified_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+        // Load existing database or create new one
+        if (fs.existsSync(dbPath)) {
+            const buffer = fs.readFileSync(dbPath);
+            db = new SQL.Database(buffer);
+            console.log('✅ Loaded existing database');
+        } else {
+            db = new SQL.Database();
+            console.log('✅ Created new database');
+        }
 
-    console.log('✅ Database initialized successfully');
+        // Create tables if they don't exist
+        db.run(`
+      CREATE TABLE IF NOT EXISTS licenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        license_key TEXT UNIQUE NOT NULL,
+        business_name TEXT,
+        device_id TEXT,
+        device_info TEXT,
+        status TEXT DEFAULT 'pending',
+        expires_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        activated_at DATETIME,
+        last_verified_at DATETIME
+      )
+    `);
+
+        db.run(`
+      CREATE TABLE IF NOT EXISTS activation_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        license_key TEXT NOT NULL,
+        device_id TEXT NOT NULL,
+        device_info TEXT,
+        business_name TEXT,
+        success INTEGER DEFAULT 0,
+        error_message TEXT,
+        ip_address TEXT,
+        attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+        db.run(`
+      CREATE TABLE IF NOT EXISTS verification_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        license_key TEXT NOT NULL,
+        device_id TEXT NOT NULL,
+        verified_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+        // Save initial database
+        saveDatabase();
+
+        console.log('✅ Database initialized successfully');
+    } catch (error) {
+        console.error('❌ Database initialization failed:', error);
+        throw error;
+    }
+}
+
+// Save database to disk
+function saveDatabase() {
+    if (!db) return;
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(dbPath, buffer);
+}
+
+// Execute a query and return results
+function executeQuery(sql, params = []) {
+    if (!db) throw new Error('Database not initialized');
+    const stmt = db.prepare(sql);
+    stmt.bind(params);
+
+    const results = [];
+    while (stmt.step()) {
+        results.push(stmt.getAsObject());
+    }
+    stmt.free();
+
+    return results;
+}
+
+// Execute a query without returning results (INSERT, UPDATE, DELETE)
+function executeRun(sql, params = []) {
+    if (!db) throw new Error('Database not initialized');
+    db.run(sql, params);
+    saveDatabase();
 }
 
 // License operations
 const licenseDB = {
     // Create a new license
     createLicense: (licenseKey, expiresAt = null) => {
-        const stmt = db.prepare(`
-      INSERT INTO licenses (license_key, status, expires_at)
-      VALUES (?, 'pending', ?)
-    `);
-
         try {
-            const result = stmt.run(licenseKey, expiresAt);
-            return { success: true, id: result.lastInsertRowid };
+            executeRun(
+                'INSERT INTO licenses (license_key, status, expires_at) VALUES (?, ?, ?)',
+                [licenseKey, 'pending', expiresAt]
+            );
+            return { success: true };
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -69,10 +119,11 @@ const licenseDB = {
 
     // Get license by key
     getLicense: (licenseKey) => {
-        const stmt = db.prepare(`
-      SELECT * FROM licenses WHERE license_key = ?
-    `);
-        return stmt.get(licenseKey);
+        const results = executeQuery(
+            'SELECT * FROM licenses WHERE license_key = ?',
+            [licenseKey]
+        );
+        return results.length > 0 ? results[0] : null;
     },
 
     // Activate a license
@@ -122,19 +173,18 @@ const licenseDB = {
         }
 
         // Activate the license
-        const stmt = db.prepare(`
-      UPDATE licenses
-      SET status = 'active',
-          device_id = ?,
-          device_info = ?,
-          business_name = ?,
-          activated_at = CURRENT_TIMESTAMP,
-          last_verified_at = CURRENT_TIMESTAMP
-      WHERE license_key = ?
-    `);
-
         try {
-            stmt.run(deviceId, JSON.stringify(deviceInfo), businessName, licenseKey);
+            executeRun(
+                `UPDATE licenses
+         SET status = 'active',
+             device_id = ?,
+             device_info = ?,
+             business_name = ?,
+             activated_at = CURRENT_TIMESTAMP,
+             last_verified_at = CURRENT_TIMESTAMP
+         WHERE license_key = ?`,
+                [deviceId, JSON.stringify(deviceInfo), businessName, licenseKey]
+            );
 
             // Log successful activation
             licenseDB.logActivationAttempt(
@@ -195,16 +245,15 @@ const licenseDB = {
 
     // Deactivate a license (for device transfer)
     deactivateLicense: (licenseKey) => {
-        const stmt = db.prepare(`
-      UPDATE licenses
-      SET status = 'pending',
-          device_id = NULL,
-          device_info = NULL
-      WHERE license_key = ?
-    `);
-
         try {
-            stmt.run(licenseKey);
+            executeRun(
+                `UPDATE licenses
+         SET status = 'pending',
+             device_id = NULL,
+             device_info = NULL
+         WHERE license_key = ?`,
+                [licenseKey]
+            );
             return { success: true };
         } catch (error) {
             return { success: false, error: error.message };
@@ -213,62 +262,53 @@ const licenseDB = {
 
     // Update last verified timestamp
     updateLastVerified: (licenseKey) => {
-        const stmt = db.prepare(`
-      UPDATE licenses
-      SET last_verified_at = CURRENT_TIMESTAMP
-      WHERE license_key = ?
-    `);
-        stmt.run(licenseKey);
+        executeRun(
+            'UPDATE licenses SET last_verified_at = CURRENT_TIMESTAMP WHERE license_key = ?',
+            [licenseKey]
+        );
     },
 
     // Log activation attempts
     logActivationAttempt: (licenseKey, deviceId, deviceInfo, businessName, success, errorMessage) => {
-        const stmt = db.prepare(`
-      INSERT INTO activation_attempts
-      (license_key, device_id, device_info, business_name, success, error_message)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-        stmt.run(
-            licenseKey,
-            deviceId,
-            JSON.stringify(deviceInfo),
-            businessName,
-            success ? 1 : 0,
-            errorMessage
+        executeRun(
+            `INSERT INTO activation_attempts
+       (license_key, device_id, device_info, business_name, success, error_message)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+                licenseKey,
+                deviceId,
+                JSON.stringify(deviceInfo),
+                businessName,
+                success ? 1 : 0,
+                errorMessage
+            ]
         );
     },
 
     // Log verification
     logVerification: (licenseKey, deviceId) => {
-        const stmt = db.prepare(`
-      INSERT INTO verification_logs (license_key, device_id)
-      VALUES (?, ?)
-    `);
-        stmt.run(licenseKey, deviceId);
+        executeRun(
+            'INSERT INTO verification_logs (license_key, device_id) VALUES (?, ?)',
+            [licenseKey, deviceId]
+        );
     },
 
     // Get all licenses (admin)
     getAllLicenses: () => {
-        const stmt = db.prepare(`
-      SELECT * FROM licenses ORDER BY created_at DESC
-    `);
-        return stmt.all();
+        return executeQuery('SELECT * FROM licenses ORDER BY created_at DESC');
     },
 
     // Get activation attempts (admin - for security)
     getActivationAttempts: (limit = 100) => {
-        const stmt = db.prepare(`
-      SELECT * FROM activation_attempts
-      ORDER BY attempted_at DESC
-      LIMIT ?
-    `);
-        return stmt.all(limit);
+        return executeQuery(
+            'SELECT * FROM activation_attempts ORDER BY attempted_at DESC LIMIT ?',
+            [limit]
+        );
     },
 
     // Get suspicious activity (multiple failed attempts)
     getSuspiciousActivity: () => {
-        const stmt = db.prepare(`
+        return executeQuery(`
       SELECT license_key, device_id, COUNT(*) as attempt_count
       FROM activation_attempts
       WHERE success = 0
@@ -276,7 +316,6 @@ const licenseDB = {
       HAVING attempt_count > 3
       ORDER BY attempt_count DESC
     `);
-        return stmt.all();
     }
 };
 

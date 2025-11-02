@@ -23,11 +23,13 @@ interface LicenseInfo {
 const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 
 const LICENSE_STORAGE_KEY = 'app_license';
-const LICENSE_API_URL = 'https://your-backend.com/api/license'; // Your backend
+// TODO: Replace with your computer's IP address after running 'ipconfig'
+// Example: const LICENSE_API_URL = 'http://192.168.1.100:3000/api/license';
+const LICENSE_API_URL = 'http://192.168.0.121:3000/api/license'; // CHANGE THIS TO YOUR IP!
 
 export const LicenseProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isLicenseValid, setIsLicenseValid] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLicenseValid, setIsLicenseValid] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [licenseInfo, setLicenseInfo] = useState<LicenseInfo | null>(null);
 
   useEffect(() => {

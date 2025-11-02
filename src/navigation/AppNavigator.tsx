@@ -5,9 +5,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useLicense } from '../contexts/LicenseContext';
 import { Text } from 'react-native';
 
 import LoginScreen from '../screens/LoginScreen';
+import LicenseActivationScreen from '../screens/LicenseActivationScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import InventoryScreen from '../screens/InventoryScreen';
 import PurchasesScreen from '../screens/PurchasesScreen';
@@ -110,16 +112,19 @@ const MoreNavigator = () => {
 };
 
 export const AppNavigator = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { isLicenseValid, isLoading: isLicenseLoading } = useLicense();
 
-  if (isLoading) {
+  if (isAuthLoading === true || isLicenseLoading === true) {
     return null;
   }
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!user ? (
+        {isLicenseValid === false ? (
+          <Stack.Screen name="LicenseActivation" component={LicenseActivationScreen} />
+        ) : user === null ? (
           <Stack.Screen name="Login" component={LoginScreen} />
         ) : (
           <Stack.Screen name="Main" component={TabNavigator} />

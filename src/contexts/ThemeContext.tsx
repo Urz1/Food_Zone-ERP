@@ -18,15 +18,15 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Load theme preference from storage
   useEffect(() => {
     const loadTheme = async () => {
       try {
         const savedTheme = await AsyncStorage.getItem('themeMode');
-        if (savedTheme === 'dark' || savedTheme === 'light') {
-          setThemeMode(savedTheme);
+        if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
+          setThemeMode(savedTheme as ThemeMode);
         }
       } catch (error) {
         console.error('Error loading theme:', error);

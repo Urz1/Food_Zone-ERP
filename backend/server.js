@@ -12,8 +12,28 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Initialize database
-initializeDatabase();
+// Initialize database (async)
+let dbReady = false;
+initializeDatabase()
+    .then(() => {
+        dbReady = true;
+        console.log('✅ Server ready to accept requests');
+    })
+    .catch((error) => {
+        console.error('❌ Failed to initialize database:', error);
+        process.exit(1);
+    });
+
+// Middleware to check if database is ready
+app.use((req, res, next) => {
+    if (!dbReady) {
+        return res.status(503).json({
+            success: false,
+            error: 'Server is initializing, please try again in a moment'
+        });
+    }
+    next();
+});
 
 // ============================================
 // PUBLIC API ENDPOINTS (Used by Mobile App)
